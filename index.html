@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="pikminlogo.png">
   <link rel="apple-touch-icon" href="pikminlogo.png">
 
-  <!-- PWA Settings for Android -->
+  <!-- PWA Settings -->
   <meta name="theme-color" content="#2e7d32">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -24,7 +24,6 @@
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Leaflet MarkerCluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 
@@ -38,7 +37,7 @@
 
     #sidebar {
       width: 380px; background: #ffffff; border-right: 1px solid #e0e0e0;
-      display: flex; flex-direction: column; z-index: 10001;
+      display: flex; flex-direction: column; z-index: 1000;
       box-shadow: 2px 0 10px rgba(0,0,0,0.1); transition: transform 0.3s ease-in-out;
     }
     .header { padding: 14px 16px; background: #2e7d32; color: white; display: flex; justify-content: space-between; align-items: center; }
@@ -63,14 +62,23 @@
     .mini-card-info { flex: 1; font-size: 0.8rem; cursor: pointer; }
     .mini-card-info strong { display: block; color: #333; }
     .mini-card-info span { color: #666; font-size: 0.75rem; }
-    .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
-    .delete-btn-text:hover { background: #ffcdd2; }
+    .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 
+    /* Mobile Floating Action Button */
     #mobile-fab {
-      display: none; position: fixed; bottom: 24px; right: 20px; z-index: 10000;
-      background: #2e7d32; color: white; border: none; padding: 14px 22px;
-      border-radius: 30px; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,0.35);
-      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 99999;
+      background: #2e7d32;
+      color: white;
+      border: none;
+      padding: 14px 22px;
+      border-radius: 30px;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      cursor: pointer;
     }
 
     .popup-gallery { width: 250px; max-height: 320px; overflow-y: auto; padding: 2px; }
@@ -81,15 +89,24 @@
     .popup-item img { width: 100%; height: auto; aspect-ratio: 1023 / 684; object-fit: contain; border-radius: 6px; display: block; background: #f8f8f8; }
     .popup-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
     .popup-delete-btn { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
-    .popup-delete-btn:hover { background: #ffcdd2; }
 
     .custom-dot-marker { background-color: #2e7d32; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
     .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background-color: rgba(46, 125, 50, 0.3) !important; }
     .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
 
-    @media (max-width: 900px) {
-      #sidebar { position: fixed; bottom: 0; left: 0; width: 100%; max-height: 80vh; border-radius: 16px 16px 0 0; border-right: none; transform: translateY(100%); }
-      #sidebar.open { transform: translateY(0) !important; }
+    @media (max-width: 768px) {
+      #sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        max-height: 80vh;
+        border-radius: 16px 16px 0 0;
+        border-right: none;
+        z-index: 100000;
+        transform: translateY(100%);
+      }
+      #sidebar.open { transform: translateY(0); }
       .close-btn { display: block; }
       #mobile-fab { display: block; }
     }
@@ -97,7 +114,7 @@
 </head>
 <body>
 
-  <button id="mobile-fab">Add / View Cards</button>
+  <div id="map"></div>
 
   <div id="sidebar">
     <div class="header">
@@ -138,9 +155,8 @@
     </div>
   </div>
 
-  <div id="map"></div>
+  <button id="mobile-fab" type="button">Add / View Cards</button>
 
-  <!-- Leaflet JS & MarkerCluster JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.js"></script>
   
@@ -174,22 +190,14 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Clean Event Listeners for Mobile Drawer Toggle
-    function openDrawer(e) {
-      if (e) e.stopPropagation();
+    // Simple Event Handlers
+    mobileFab.onclick = function() {
       sidebar.classList.add('open');
-    }
+    };
 
-    function closeDrawer(e) {
-      if (e) e.stopPropagation();
+    closeDrawerBtn.onclick = function() {
       sidebar.classList.remove('open');
-    }
-
-    mobileFab.addEventListener('click', openDrawer);
-    mobileFab.addEventListener('touchstart', openDrawer, { passive: true });
-
-    closeDrawerBtn.addEventListener('click', closeDrawer);
-    closeDrawerBtn.addEventListener('touchstart', closeDrawer, { passive: true });
+    };
 
     searchInput.addEventListener('input', renderSidebarList);
 
