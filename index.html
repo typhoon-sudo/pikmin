@@ -37,7 +37,7 @@
 
     #sidebar {
       width: 380px; background: #ffffff; border-right: 1px solid #e0e0e0;
-      display: flex; flex-direction: column; z-index: 1000;
+      display: flex; flex-direction: column; z-index: 100000;
       box-shadow: 2px 0 10px rgba(0,0,0,0.1); transition: transform 0.3s ease-in-out;
     }
     .header { padding: 14px 16px; background: #2e7d32; color: white; display: flex; justify-content: space-between; align-items: center; }
@@ -64,19 +64,30 @@
     .mini-card-info span { color: #666; font-size: 0.75rem; }
     .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 
-    /* Visual edge hint indicator for mobile */
-    .swipe-hint {
+    /* Dedicated Large Edge Touch Zone for Mobile */
+    #edge-touch-zone {
       display: none;
       position: fixed;
       left: 0;
+      top: 0;
+      width: 65px;
+      height: 100vh;
+      z-index: 9999;
+      background: linear-gradient(90deg, rgba(46, 125, 50, 0.12) 0%, rgba(0, 0, 0, 0) 100%);
+      touch-action: none;
+    }
+
+    #edge-touch-zone::after {
+      content: '';
+      position: absolute;
+      left: 0;
       top: 50%;
       transform: translateY(-50%);
-      width: 6px;
-      height: 48px;
-      background: rgba(46, 125, 50, 0.6);
-      border-radius: 0 4px 4px 0;
-      z-index: 999;
-      pointer-events: none;
+      width: 8px;
+      height: 60px;
+      background: #2e7d32;
+      border-radius: 0 6px 6px 0;
+      box-shadow: 2px 0 6px rgba(0,0,0,0.25);
     }
 
     .popup-gallery { width: 250px; max-height: 320px; overflow-y: auto; padding: 2px; }
@@ -93,7 +104,7 @@
     .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
 
     @media (max-width: 900px) {
-      .swipe-hint { display: block; }
+      #edge-touch-zone { display: block; }
       #sidebar {
         position: fixed;
         top: 0;
@@ -101,7 +112,6 @@
         width: 85%;
         max-width: 320px;
         height: 100vh;
-        z-index: 100000;
         transform: translateX(-100%);
       }
       #sidebar.open { transform: translateX(0) !important; }
@@ -111,7 +121,7 @@
 </head>
 <body>
 
-  <div class="swipe-hint"></div>
+  <div id="edge-touch-zone"></div>
 
   <div id="sidebar">
     <div class="header">
@@ -179,6 +189,7 @@
 
     const sidebar = document.getElementById('sidebar');
     const closeDrawerBtn = document.getElementById('close-drawer-btn');
+    const edgeTouchZone = document.getElementById('edge-touch-zone');
     const imageInput = document.getElementById('image-input');
     const previewContainer = document.getElementById('preview-container');
     const previewImg = document.getElementById('preview-img');
@@ -187,42 +198,41 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Touch Swipe Gesture Handling (Edge Swipe from Left)
+    // Prevent Leaflet Map from capturing touches inside the left edge touch zone
+    L.DomEvent.disableClickPropagation(edgeTouchZone);
+    L.DomEvent.disableScrollPropagation(edgeTouchZone);
+
     let touchStartX = 0;
     let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
 
-    const EDGE_THRESHOLD = 35; // Maximum distance from screen edge to count as edge swipe
-    const SWIPE_THRESHOLD = 40; // Minimum horizontal swipe distance to trigger
-
-    document.addEventListener('touchstart', function(e) {
-      touchStartX = e.changedTouches[0].clientX;
-      touchStartY = e.changedTouches[0].clientY;
+    edgeTouchZone.addEventListener('touchstart', function(e) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
     }, { passive: true });
 
-    document.addEventListener('touchend', function(e) {
-      touchEndX = e.changedTouches[0].clientX;
-      touchEndY = e.changedTouches[0].clientY;
-      handleSwipeGesture();
-    }, { passive: true });
-
-    function handleSwipeGesture() {
+    edgeTouchZone.addEventListener('touchend', function(e) {
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
       const deltaX = touchEndX - touchStartX;
       const deltaY = touchEndY - touchStartY;
 
-      // Ensure horizontal swipe dominant over vertical scrolling
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        // Swipe Right from Left Edge -> Open Sidebar
-        if (deltaX > SWIPE_THRESHOLD && touchStartX <= EDGE_THRESHOLD) {
-          sidebar.classList.add('open');
-        } 
-        // Swipe Left -> Close Sidebar (if opened)
-        else if (deltaX < -SWIPE_THRESHOLD && sidebar.classList.contains('open')) {
-          sidebar.classList.remove('open');
-        }
+      // Trigger open if swiping right OR performing a tap on the zone
+      if (deltaX > 15 || (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10)) {
+        sidebar.classList.add('open');
       }
-    }
+    }, { passive: true });
+
+    // Swipe left to close when sidebar is open
+    sidebar.addEventListener('touchstart', function(e) {
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    sidebar.addEventListener('touchend', function(e) {
+      const deltaX = e.changedTouches[0].clientX - touchStartX;
+      if (deltaX < -30) {
+        sidebar.classList.remove('open');
+      }
+    }, { passive: true });
 
     closeDrawerBtn.onclick = function() {
       sidebar.classList.remove('open');
