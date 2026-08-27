@@ -200,19 +200,19 @@
 
   <!-- Leaflet JS & MarkerCluster JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/Leaflet.markercluster.js"></script>
   
   <script>
-    // C1: Vibrant Tile Layer (CartoDB Voyager)
+    // Free & Vibrant Tile Layer (OpenStreetMap HOT - No API Key Required)
     const map = L.map('map', { zoomControl: false }).setView([23.9756, 120.9738], 7);
     L.control.zoom({ position: 'topright' }).addTo(map);
     
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  maxZoom: 19
-}).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(map);
 
-    // C2: Custom Marker Cluster counting total entries across points
+    // Dynamic Cluster Icon (sums postcards across clustered locations)
     const markerClusterGroup = L.markerClusterGroup({
       showCoverageOnHover: false,
       maxClusterRadius: 45,
@@ -237,9 +237,18 @@
     });
     map.addLayer(markerClusterGroup);
 
-    const districtRegistry = {};
+    // Load data from persistent browser storage
+    const districtRegistry = JSON.parse(localStorage.getItem('pikmin_vault_data')) || {};
     const mapMarkers = {};
     let currentBase64Image = "";
+
+    function saveVaultData() {
+      try {
+        localStorage.setItem('pikmin_vault_data', JSON.stringify(districtRegistry));
+      } catch (e) {
+        console.error("Storage full or unavailable:", e);
+      }
+    }
 
     // DOM References
     const sidebar = document.getElementById('sidebar');
@@ -309,6 +318,7 @@
         districtRegistry[areaKey].cards.push({ id: cardId, title, image: currentBase64Image });
 
         updateMapMarker(areaKey);
+        saveVaultData();
         renderSidebarList();
 
         uploadForm.reset();
@@ -327,7 +337,6 @@
       }
     });
 
-    // C2: Dynamic Number Icon Generator
     function createCustomDotIcon(count) {
       return L.divIcon({
         className: 'custom-dot-marker',
@@ -339,6 +348,7 @@
 
     function updateMapMarker(areaKey) {
       const data = districtRegistry[areaKey];
+      if (!data) return;
       const count = data.cards.length;
 
       let popupHtml = `<div class="popup-gallery">`;
@@ -379,13 +389,16 @@
       group.cards = group.cards.filter(c => c.id !== cardId);
 
       if (group.cards.length === 0) {
-        markerClusterGroup.removeLayer(mapMarkers[areaKey]);
-        delete mapMarkers[areaKey];
+        if (mapMarkers[areaKey]) {
+          markerClusterGroup.removeLayer(mapMarkers[areaKey]);
+          delete mapMarkers[areaKey];
+        }
         delete districtRegistry[areaKey];
       } else {
         updateMapMarker(areaKey);
       }
 
+      saveVaultData();
       renderSidebarList();
     };
 
@@ -435,7 +448,13 @@
       });
     }
 
-    // Register Service Worker for PWA Capability
+    // Initialize saved data onto map and sidebar
+    Object.keys(districtRegistry).forEach(areaKey => {
+      updateMapMarker(areaKey);
+    });
+    renderSidebarList();
+
+    // Service Worker Registration for PWA support
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
