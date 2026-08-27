@@ -64,30 +64,28 @@
     .mini-card-info span { color: #666; font-size: 0.75rem; }
     .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 
-    /* Dedicated Large Edge Touch Zone for Mobile */
+    /* HIGH VISIBILITY DRASTIC EDGE TOUCH ZONE */
     #edge-touch-zone {
       display: none;
       position: fixed;
       left: 0;
       top: 0;
-      width: 65px;
+      width: 140px;
       height: 100vh;
-      z-index: 9999;
-      background: linear-gradient(90deg, rgba(46, 125, 50, 0.12) 0%, rgba(0, 0, 0, 0) 100%);
+      z-index: 99999;
+      background: rgba(46, 125, 50, 0.88);
+      color: #ffffff;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.5);
       touch-action: none;
-    }
-
-    #edge-touch-zone::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 8px;
-      height: 60px;
-      background: #2e7d32;
-      border-radius: 0 6px 6px 0;
-      box-shadow: 2px 0 6px rgba(0,0,0,0.25);
+      cursor: pointer;
+      user-select: none;
     }
 
     .popup-gallery { width: 250px; max-height: 320px; overflow-y: auto; padding: 2px; }
@@ -104,7 +102,7 @@
     .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
 
     @media (max-width: 900px) {
-      #edge-touch-zone { display: block; }
+      #edge-touch-zone { display: flex; }
       #sidebar {
         position: fixed;
         top: 0;
@@ -121,7 +119,8 @@
 </head>
 <body>
 
-  <div id="edge-touch-zone"></div>
+  <!-- Drastic Touch Banner -->
+  <div id="edge-touch-zone">▶ TAP OR SWIPE TO OPEN VAULT</div>
 
   <div id="sidebar">
     <div class="header">
@@ -198,27 +197,29 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Prevent Leaflet Map from capturing touches inside the left edge touch zone
+    // Completely block Leaflet from dragging/interacting when touching this zone
     L.DomEvent.disableClickPropagation(edgeTouchZone);
     L.DomEvent.disableScrollPropagation(edgeTouchZone);
 
+    const openDrawer = function(e) {
+      if (e) L.DomEvent.stopPropagation(e);
+      sidebar.classList.add('open');
+    };
+
+    // Direct click/tap listener on the banner
+    edgeTouchZone.addEventListener('click', openDrawer);
+
     let touchStartX = 0;
-    let touchStartY = 0;
 
     edgeTouchZone.addEventListener('touchstart', function(e) {
       touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
     }, { passive: true });
 
     edgeTouchZone.addEventListener('touchend', function(e) {
-      const touchEndX = e.changedTouches[0].clientX;
-      const touchEndY = e.changedTouches[0].clientY;
-      const deltaX = touchEndX - touchStartX;
-      const deltaY = touchEndY - touchStartY;
-
-      // Trigger open if swiping right OR performing a tap on the zone
-      if (deltaX > 15 || (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10)) {
-        sidebar.classList.add('open');
+      const deltaX = e.changedTouches[0].clientX - touchStartX;
+      // Trigger if swiped right OR if tapped
+      if (deltaX > 10 || Math.abs(deltaX) < 10) {
+        openDrawer(e);
       }
     }, { passive: true });
 
