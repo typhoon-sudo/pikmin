@@ -35,6 +35,36 @@
     body { display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #f4f6f8; position: relative; }
     #map { flex: 1; height: 100%; width: 100%; z-index: 1; }
 
+    /* Floating Action Button */
+    #vault-button {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      background: #2e7d32;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      pointer-events: auto;
+      letter-spacing: 0.5px;
+    }
+
+    #vault-button:hover {
+      background: #1b5e20;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    }
+
+    #vault-button:active {
+      transform: translateX(-50%) scale(0.95);
+    }
+
     /* Dimmed Backdrop */
     #drawer-backdrop {
       position: fixed;
@@ -42,15 +72,17 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.5);
       z-index: 99998;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.3s ease, visibility 0.3s ease;
+      pointer-events: none;
     }
     #drawer-backdrop.active {
       opacity: 1;
       visibility: visible;
+      pointer-events: auto;
     }
 
     /* Bottom Sheet Container */
@@ -69,84 +101,237 @@
       z-index: 99999;
       display: flex;
       flex-direction: column;
-      transform: translateY(calc(100% - 54px));
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       pointer-events: auto;
     }
 
     #bottom-drawer.open {
-      transform: translateY(0) !important;
+      transform: translateY(0);
     }
 
-    /* Bottom Drawer Handle Bar */
-    #drawer-handle {
-      height: 54px;
+    /* Bottom Drawer Header */
+    #drawer-header {
       background: #2e7d32;
       color: #ffffff;
-      border-radius: 18px 18px 0 0;
+      padding: 16px;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 18px 18px 0 0;
+      flex-shrink: 0;
+    }
+
+    #drawer-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    #close-button {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      user-select: none;
-      touch-action: none;
-      padding: 6px 16px;
-      position: relative;
-      z-index: 100000;
-      pointer-events: auto;
+      transition: background 0.2s ease;
     }
 
-    .handle-pill {
-      width: 40px;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.6);
-      border-radius: 2px;
-      margin-bottom: 6px;
-      pointer-events: none;
+    #close-button:hover {
+      background: rgba(255, 255, 255, 0.3);
     }
 
-    .handle-text {
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      pointer-events: none;
+    .content-area { 
+      overflow-y: auto; 
+      flex: 1;
+      -webkit-overflow-scrolling: touch;
     }
 
-    .content-area { overflow-y: auto; flex: 1; }
-    .form-container { padding: 16px; border-bottom: 1px solid #eee; background: #fafafa; }
+    .form-container { 
+      padding: 16px; 
+      border-bottom: 1px solid #eee; 
+      background: #fafafa; 
+    }
+
     .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #555; }
-    .form-group input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
-    #preview-container { display: none; margin-top: 8px; width: 100%; height: 120px; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; }
-    #preview-img { width: 100%; height: 100%; object-fit: contain; background: #111; }
-    .btn-primary { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .form-group label { 
+      display: block; 
+      font-size: 0.8rem; 
+      font-weight: 600; 
+      margin-bottom: 4px; 
+      color: #555; 
+    }
+    .form-group input { 
+      width: 100%; 
+      padding: 8px 10px; 
+      border: 1px solid #ccc; 
+      border-radius: 6px; 
+      font-size: 0.9rem; 
+    }
+
+    #preview-container { 
+      display: none; 
+      margin-top: 8px; 
+      width: 100%; 
+      height: 120px; 
+      border-radius: 6px; 
+      overflow: hidden; 
+      border: 1px solid #ddd; 
+    }
+    #preview-img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: contain; 
+      background: #111; 
+    }
+
+    .btn-primary { 
+      width: 100%; 
+      padding: 10px; 
+      background: #4CAF50; 
+      color: white; 
+      border: none; 
+      border-radius: 6px; 
+      font-weight: 600; 
+      cursor: pointer; 
+    }
     .btn-primary:hover { background: #388E3C; }
     .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
 
     #postcard-list { padding: 16px; }
-    .search-box { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; }
-    .list-title { font-size: 0.85rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
-    .mini-card { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; background: #fff; position: relative; }
-    .mini-card img { width: 50px; height: auto; aspect-ratio: 1023 / 684; object-fit: contain; border-radius: 4px; background: #f0f0f0; cursor: pointer; }
-    .mini-card-info { flex: 1; font-size: 0.8rem; cursor: pointer; }
-    .mini-card-info strong { display: block; color: #333; }
-    .mini-card-info span { color: #666; font-size: 0.75rem; }
-    .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .search-box { 
+      width: 100%; 
+      padding: 8px 12px; 
+      border: 1px solid #ddd; 
+      border-radius: 6px; 
+      margin-bottom: 12px; 
+      font-size: 0.85rem; 
+    }
+    .list-title { 
+      font-size: 0.85rem; 
+      font-weight: 700; 
+      color: #888; 
+      text-transform: uppercase; 
+      margin-bottom: 12px; 
+      letter-spacing: 0.5px; 
+    }
+    .mini-card { 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      padding: 8px; 
+      border: 1px solid #eee; 
+      border-radius: 8px; 
+      margin-bottom: 8px; 
+      background: #fff; 
+      position: relative; 
+    }
+    .mini-card img { 
+      width: 50px; 
+      height: auto; 
+      aspect-ratio: 1023 / 684; 
+      object-fit: contain; 
+      border-radius: 4px; 
+      background: #f0f0f0; 
+      cursor: pointer; 
+    }
+    .mini-card-info { 
+      flex: 1; 
+      font-size: 0.8rem; 
+      cursor: pointer; 
+    }
+    .mini-card-info strong { 
+      display: block; 
+      color: #333; 
+    }
+    .mini-card-info span { 
+      color: #666; 
+      font-size: 0.75rem; 
+    }
+    .delete-btn-text { 
+      background: #ffebee; 
+      color: #c62828; 
+      border: 1px solid #ffcdd2; 
+      font-size: 0.72rem; 
+      padding: 3px 8px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-weight: 600; 
+    }
 
-    .popup-gallery { width: 250px; max-height: 320px; overflow-y: auto; padding: 2px; }
-    .popup-item { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
-    .popup-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .popup-title { font-weight: 700; font-size: 0.88rem; color: #2c3e50; line-height: 1.2; }
-    .popup-location { font-size: 0.75rem; color: #666; margin-top: 2px; margin-bottom: 6px; }
-    .popup-item img { width: 100%; height: auto; aspect-ratio: 1023 / 684; object-fit: contain; border-radius: 6px; display: block; background: #f8f8f8; }
-    .popup-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
-    .popup-delete-btn { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .popup-gallery { 
+      width: 250px; 
+      max-height: 320px; 
+      overflow-y: auto; 
+      padding: 2px; 
+    }
+    .popup-item { 
+      border-bottom: 1px solid #eee; 
+      padding-bottom: 10px; 
+      margin-bottom: 10px; 
+    }
+    .popup-item:last-child { 
+      border-bottom: none; 
+      margin-bottom: 0; 
+      padding-bottom: 0; 
+    }
+    .popup-title { 
+      font-weight: 700; 
+      font-size: 0.88rem; 
+      color: #2c3e50; 
+      line-height: 1.2; 
+    }
+    .popup-location { 
+      font-size: 0.75rem; 
+      color: #666; 
+      margin-top: 2px; 
+      margin-bottom: 6px; 
+    }
+    .popup-item img { 
+      width: 100%; 
+      height: auto; 
+      aspect-ratio: 1023 / 684; 
+      object-fit: contain; 
+      border-radius: 6px; 
+      display: block; 
+      background: #f8f8f8; 
+    }
+    .popup-actions { 
+      display: flex; 
+      justify-content: flex-end; 
+      margin-top: 6px; 
+    }
+    .popup-delete-btn { 
+      background: #ffebee; 
+      color: #c62828; 
+      border: 1px solid #ffcdd2; 
+      font-size: 0.72rem; 
+      padding: 3px 8px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-weight: 600; 
+    }
 
-    .custom-dot-marker { background-color: #2e7d32; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
-    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background-color: rgba(46, 125, 50, 0.3) !important; }
-    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
+    .custom-dot-marker { 
+      background-color: #2e7d32; 
+      border: 2px solid #ffffff; 
+      border-radius: 50%; 
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3); 
+    }
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { 
+      background-color: rgba(46, 125, 50, 0.3) !important; 
+    }
+    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { 
+      background-color: #2e7d32 !important; 
+      color: white !important; 
+      font-weight: bold; 
+    }
   </style>
 </head>
 <body>
@@ -154,9 +339,9 @@
   <div id="drawer-backdrop"></div>
 
   <div id="bottom-drawer">
-    <div id="drawer-handle">
-      <div class="handle-pill"></div>
-      <div class="handle-text" id="handle-label">▲ SWIPE UP / TAP FOR VAULT</div>
+    <div id="drawer-header">
+      <div id="drawer-title">Postcard Vault</div>
+      <button id="close-button">✕</button>
     </div>
 
     <div class="content-area">
@@ -192,6 +377,8 @@
     </div>
   </div>
 
+  <button id="vault-button">📬 Open Vault</button>
+
   <div id="map"></div>
 
   <!-- Leaflet JS & MarkerCluster JS -->
@@ -206,8 +393,7 @@
     const map = L.map('map', { 
       zoomControl: false, 
       minZoom: 4, 
-      maxZoom: 19,
-      tap: true // Enable tap handling
+      maxZoom: 19 
     }).setView([23.9756, 120.9738], 7);
     L.control.zoom({ position: 'topright' }).addTo(map);
 
@@ -223,9 +409,9 @@
     let currentBase64Image = "";
 
     const bottomDrawer = document.getElementById('bottom-drawer');
-    const drawerHandle = document.getElementById('drawer-handle');
-    const handleLabel = document.getElementById('handle-label');
     const drawerBackdrop = document.getElementById('drawer-backdrop');
+    const vaultButton = document.getElementById('vault-button');
+    const closeButton = document.getElementById('close-button');
     const imageInput = document.getElementById('image-input');
     const previewContainer = document.getElementById('preview-container');
     const previewImg = document.getElementById('preview-img');
@@ -237,81 +423,18 @@
     function openVault() {
       bottomDrawer.classList.add('open');
       drawerBackdrop.classList.add('active');
-      handleLabel.innerText = "▼ SWIPE DOWN / TAP TO CLOSE";
+      vaultButton.style.display = 'none';
     }
 
     function closeVault() {
       bottomDrawer.classList.remove('open');
       drawerBackdrop.classList.remove('active');
-      handleLabel.innerText = "▲ SWIPE UP / TAP FOR VAULT";
+      vaultButton.style.display = 'block';
     }
 
-    function toggleVault() {
-      if (bottomDrawer.classList.contains('open')) {
-        closeVault();
-      } else {
-        openVault();
-      }
-    }
-
-    // Click/Tap handling
-    drawerHandle.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleVault();
-    });
-
+    vaultButton.addEventListener('click', openVault);
+    closeButton.addEventListener('click', closeVault);
     drawerBackdrop.addEventListener('click', closeVault);
-
-    // Touch Swipe Gesture Handling
-    let startY = 0;
-    let startX = 0;
-    let isSwiping = false;
-    let swipeThreshold = 30; // Minimum distance for swipe
-
-    drawerHandle.addEventListener('touchstart', function(e) {
-      const touch = e.touches[0];
-      startY = touch.clientY;
-      startX = touch.clientX;
-      isSwiping = true;
-      e.preventDefault(); // Prevent default to stop map interaction
-      e.stopPropagation();
-    }, { passive: false });
-
-    drawerHandle.addEventListener('touchmove', function(e) {
-      if (isSwiping) {
-        e.preventDefault(); // Prevent scrolling while swiping
-        e.stopPropagation();
-      }
-    }, { passive: false });
-
-    drawerHandle.addEventListener('touchend', function(e) {
-      if (!isSwiping) return;
-      isSwiping = false;
-      
-      const touch = e.changedTouches[0];
-      const deltaY = startY - touch.clientY; // Positive = swiped up
-      const deltaX = startX - touch.clientX;
-      
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Check if it's more vertical than horizontal
-      if (Math.abs(deltaY) > Math.abs(deltaX)) {
-        if (deltaY > swipeThreshold) {
-          // Swiped up
-          openVault();
-        } else if (deltaY < -swipeThreshold) {
-          // Swiped down
-          closeVault();
-        }
-      }
-    }, { passive: false });
-
-    // Also handle touchcancel
-    drawerHandle.addEventListener('touchcancel', function(e) {
-      isSwiping = false;
-    });
 
     // Prevent map interactions when interacting with the drawer
     L.DomEvent.disableClickPropagation(bottomDrawer);
