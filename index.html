@@ -5,16 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Pikmin Postcard Vault</title>
 
-  <!-- Favicon & Apple Touch Icon -->
+  <!-- Favicon & PWA Settings -->
   <link rel="icon" type="image/png" href="pikminlogo.png">
   <link rel="apple-touch-icon" href="pikminlogo.png">
-
-  <!-- PWA Settings -->
   <meta name="theme-color" content="#2e7d32">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Font: Inter -->
@@ -29,170 +26,180 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body, input, button, select, textarea, .leaflet-container, .leaflet-popup-content-wrapper, .leaflet-popup-content {
+    body, input, button, select, textarea, .leaflet-container {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif !important;
     }
     body { display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #f4f6f8; position: relative; }
-    #map { flex: 1; height: 100%; width: 100%; z-index: 1; }
+    #map { width: 100%; height: 100%; z-index: 1; }
 
-    /* Dimmed Backdrop */
-    #drawer-backdrop {
+    /* Permanent Floating Action Button (FAB) */
+    #vault-trigger-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 99999;
+      background: #2e7d32;
+      color: #ffffff;
+      border: none;
+      padding: 14px 22px;
+      border-radius: 50px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.15s ease, background 0.2s ease;
+    }
+    #vault-trigger-btn:active {
+      transform: scale(0.95);
+      background: #1b5e20;
+    }
+
+    /* Modal Backdrop */
+    #modal-backdrop {
       display: none;
       position: fixed;
       top: 0; left: 0;
       width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.4);
-      z-index: 9998;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
     }
-    #drawer-backdrop.active {
-      opacity: 1;
-      pointer-events: auto;
+    #modal-backdrop.active {
+      display: flex;
     }
 
-    /* Sidebar / Bottom Sheet Container */
-    #sidebar {
-      width: 380px;
+    /* Vault Modal Window */
+    #vault-modal {
       background: #ffffff;
-      border-right: 1px solid #e0e0e0;
+      width: 100%;
+      max-width: 440px;
+      max-height: 85vh;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
       display: flex;
       flex-direction: column;
-      z-index: 9999;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
     }
 
-    .header {
-      padding: 14px 16px;
+    .modal-header {
+      padding: 14px 18px;
       background: #2e7d32;
       color: white;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .header h1 { font-size: 1.1rem; font-weight: 600; }
-    .close-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; display: none; }
-    .content-area { overflow-y: auto; flex: 1; }
-    .form-container { padding: 16px; border-bottom: 1px solid #eee; background: #fafafa; }
-    .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #555; }
-    .form-group input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
-    #preview-container { display: none; margin-top: 8px; width: 100%; height: 120px; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; }
+    .modal-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .close-modal-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-body { overflow-y: auto; flex: 1; padding: 16px; }
+
+    .form-container {
+      background: #f8f9fa;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #e9ecef;
+      margin-bottom: 16px;
+    }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #495057; }
+    .form-group input { width: 100%; padding: 8px 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 0.88rem; }
+    #preview-container { display: none; margin-top: 8px; width: 100%; height: 110px; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; }
     #preview-img { width: 100%; height: 100%; object-fit: contain; background: #111; }
-    .btn-primary { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .btn-primary:hover { background: #388E3C; }
-    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
-
-    #postcard-list { padding: 16px; }
-    .search-box { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; }
-    .list-title { font-size: 0.85rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
-    .mini-card { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; background: #fff; position: relative; }
-    .mini-card img { width: 50px; height: auto; aspect-ratio: 1023 / 684; object-fit: contain; border-radius: 4px; background: #f0f0f0; cursor: pointer; }
-    .mini-card-info { flex: 1; font-size: 0.8rem; cursor: pointer; }
-    .mini-card-info strong { display: block; color: #333; }
-    .mini-card-info span { color: #666; font-size: 0.75rem; }
-    .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
-    .delete-btn-text:hover { background: #ffcdd2; }
-
-    /* Mobile Floating Trigger Button */
-    #mobile-fab {
-      display: none;
-      position: fixed;
-      bottom: 24px;
-      right: 20px;
-      z-index: 9997;
+    
+    .btn-submit {
+      width: 100%;
+      padding: 10px;
       background: #2e7d32;
       color: white;
       border: none;
-      padding: 12px 20px;
-      border-radius: 30px;
+      border-radius: 6px;
       font-weight: 600;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
       cursor: pointer;
-      pointer-events: auto;
+      margin-top: 4px;
     }
+    .btn-submit:disabled { background: #adb5bd; cursor: not-allowed; }
 
-    .popup-gallery { width: 250px; max-height: 320px; overflow-y: auto; padding: 2px; }
-    .popup-item { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
-    .popup-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .popup-title { font-weight: 700; font-size: 0.88rem; color: #2c3e50; line-height: 1.2; }
-    .popup-location { font-size: 0.75rem; color: #666; margin-top: 2px; margin-bottom: 6px; }
-    .popup-item img { width: 100%; height: auto; aspect-ratio: 1023 / 684; object-fit: contain; border-radius: 6px; display: block; background: #f8f8f8; }
-    .popup-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
-    .popup-delete-btn { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
-    .popup-delete-btn:hover { background: #ffcdd2; }
+    .search-box { width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; }
+    .list-title { font-size: 0.8rem; font-weight: 700; color: #6c757d; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+    
+    .mini-card { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 8px; background: #fff; }
+    .mini-card img { width: 48px; height: 32px; object-fit: cover; border-radius: 4px; background: #eee; cursor: pointer; }
+    .mini-card-info { flex: 1; font-size: 0.8rem; cursor: pointer; }
+    .mini-card-info strong { display: block; color: #212529; }
+    .mini-card-info span { color: #6c757d; font-size: 0.75rem; }
+    .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 
     .custom-dot-marker { background-color: #2e7d32; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
     .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background-color: rgba(46, 125, 50, 0.3) !important; }
     .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
-
-    /* Mobile Responsive Layout */
-    @media (max-width: 767px) {
-      #drawer-backdrop { display: block; }
-      #sidebar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 80vh;
-        max-height: 80vh;
-        border-radius: 16px 16px 0 0;
-        border-right: none;
-        transform: translateY(100%);
-      }
-      #sidebar.open { transform: translateY(0); }
-      .close-btn { display: block; }
-      #mobile-fab { display: block; }
-    }
   </style>
 </head>
 <body>
 
-  <div id="drawer-backdrop"></div>
-  <button id="mobile-fab">✚ Postcard Vault</button>
+  <!-- Map Canvas -->
+  <div id="map"></div>
 
-  <div id="sidebar">
-    <div class="header">
-      <h1>Postcard Vault</h1>
-      <button class="close-btn" id="close-drawer-btn">✕</button>
-    </div>
+  <!-- Permanent Floating Trigger Button -->
+  <button id="vault-trigger-btn">✚ Open Vault</button>
 
-    <div class="content-area">
-      <div class="form-container">
-        <form id="upload-form">
-          <div class="form-group">
-            <label for="card-title">Postcard Title</label>
-            <input type="text" id="card-title" placeholder="e.g., Pikmin Monument" required />
-          </div>
-
-          <div class="form-group">
-            <label for="area-input">District / Area</label>
-            <input type="text" id="area-input" placeholder="e.g., Kita Ward, Osaka" required />
-          </div>
-
-          <div class="form-group">
-            <label for="image-input">Postcard Screenshot</label>
-            <input type="file" id="image-input" accept="image/*" required />
-            <div id="preview-container">
-              <img id="preview-img" src="" alt="Preview" />
-            </div>
-          </div>
-
-          <button type="submit" id="submit-btn" class="btn-primary">Add to Map</button>
-        </form>
+  <!-- Modal Screen Overlay -->
+  <div id="modal-backdrop">
+    <div id="vault-modal">
+      <div class="modal-header">
+        <h2>Pikmin Postcard Vault</h2>
+        <button class="close-modal-btn" id="close-modal-btn">✕</button>
       </div>
 
-      <div id="postcard-list">
-        <div class="list-title">Saved Postcards</div>
-        <input type="text" id="search-input" class="search-box" placeholder="Search by title or district..." />
-        <div id="cards-container"></div>
+      <div class="modal-body">
+        <div class="form-container">
+          <form id="upload-form">
+            <div class="form-group">
+              <label for="card-title">Postcard Title</label>
+              <input type="text" id="card-title" placeholder="e.g., Pikmin Monument" required />
+            </div>
+
+            <div class="form-group">
+              <label for="area-input">District / City Area</label>
+              <input type="text" id="area-input" placeholder="e.g., Central, Hong Kong" required />
+            </div>
+
+            <div class="form-group">
+              <label for="image-input">Postcard Image</label>
+              <input type="file" id="image-input" accept="image/*" required />
+              <div id="preview-container">
+                <img id="preview-img" src="" alt="Preview" />
+              </div>
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn-submit">Add to Map</button>
+          </form>
+        </div>
+
+        <div>
+          <div class="list-title">Saved Postcards</div>
+          <input type="text" id="search-input" class="search-box" placeholder="Search saved cards..." />
+          <div id="cards-container"></div>
+        </div>
       </div>
     </div>
   </div>
-
-  <div id="map"></div>
 
   <!-- Leaflet JS & MarkerCluster JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -203,11 +210,11 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
-    const map = L.map('map', { zoomControl: false, minZoom: 4, maxZoom: 19 }).setView([23.9756, 120.9738], 7);
+    const map = L.map('map', { zoomControl: false, minZoom: 3, maxZoom: 19 }).setView([22.3193, 114.1694], 10);
     L.control.zoom({ position: 'topright' }).addTo(map);
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors', minZoom: 4, maxZoom: 19
+      attribution: '&copy; OpenStreetMap contributors', minZoom: 3, maxZoom: 19
     }).addTo(map);
 
     const markerClusterGroup = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 45 });
@@ -217,10 +224,11 @@
     const mapMarkers = {};
     let currentBase64Image = "";
 
-    const sidebar = document.getElementById('sidebar');
-    const mobileFab = document.getElementById('mobile-fab');
-    const closeDrawerBtn = document.getElementById('close-drawer-btn');
-    const drawerBackdrop = document.getElementById('drawer-backdrop');
+    const triggerBtn = document.getElementById('vault-trigger-btn');
+    const modalBackdrop = document.getElementById('modal-backdrop');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const vaultModal = document.getElementById('vault-modal');
+    
     const imageInput = document.getElementById('image-input');
     const previewContainer = document.getElementById('preview-container');
     const previewImg = document.getElementById('preview-img');
@@ -229,25 +237,25 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Isolate control UI elements from Leaflet map touches
-    L.DomEvent.disableClickPropagation(mobileFab);
-    L.DomEvent.disableScrollPropagation(mobileFab);
-    L.DomEvent.disableClickPropagation(sidebar);
-    L.DomEvent.disableScrollPropagation(sidebar);
+    // Completely isolate button and modal DOM events from Leaflet
+    L.DomEvent.disableClickPropagation(triggerBtn);
+    L.DomEvent.disableTouchPropagation(triggerBtn);
+    L.DomEvent.disableClickPropagation(vaultModal);
+    L.DomEvent.disableTouchPropagation(vaultModal);
 
-    function openVault() {
-      sidebar.classList.add('open');
-      drawerBackdrop.classList.add('active');
+    function showModal() {
+      modalBackdrop.classList.add('active');
     }
 
-    function closeVault() {
-      sidebar.classList.remove('open');
-      drawerBackdrop.classList.remove('active');
+    function hideModal() {
+      modalBackdrop.classList.remove('active');
     }
 
-    mobileFab.addEventListener('click', openVault);
-    closeDrawerBtn.addEventListener('click', closeVault);
-    drawerBackdrop.addEventListener('click', closeVault);
+    triggerBtn.addEventListener('click', showModal);
+    closeModalBtn.addEventListener('click', hideModal);
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) hideModal();
+    });
 
     searchInput.addEventListener('input', renderSidebarList);
 
@@ -255,7 +263,7 @@
       try {
         localStorage.setItem('pikmin_postcards_db', JSON.stringify(districtRegistry));
       } catch (e) {
-        alert("Storage limit reached! Consider using smaller images.");
+        alert("Local storage limit reached.");
       }
     }
 
@@ -288,7 +296,7 @@
       const areaKey = area.toLowerCase();
 
       submitBtn.disabled = true;
-      submitBtn.innerText = "Finding location...";
+      submitBtn.innerText = "Locating...";
 
       try {
         let lat, lng;
@@ -297,12 +305,11 @@
           lng = districtRegistry[areaKey].lng;
         } else {
           const endpoint = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(area)}`;
-          const response = await fetch(endpoint, {
-            headers: { 'Accept-Language': 'en' }
-          });
+          const response = await fetch(endpoint, { headers: { 'Accept-Language': 'en' } });
           const results = await response.json();
+          
           if (!results || results.length === 0) {
-            alert("Could not find coordinates for that area. Please check spelling.");
+            alert("Could not locate that area. Try adding a city or country name.");
             return;
           }
           lat = parseFloat(results[0].lat);
@@ -313,7 +320,7 @@
           districtRegistry[areaKey] = { areaName: area, lat, lng, cards: [] };
         }
 
-        const cardId = 'card_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+        const cardId = 'card_' + Date.now();
         districtRegistry[areaKey].cards.push({ id: cardId, title, image: currentBase64Image });
 
         saveStorage();
@@ -324,10 +331,10 @@
         previewContainer.style.display = 'none';
         currentBase64Image = "";
 
-        closeVault();
-        map.flyTo([lat, lng], 11, { duration: 1.2 });
+        hideModal();
+        map.flyTo([lat, lng], 12, { duration: 1.2 });
       } catch (err) {
-        alert("Geocoding service unavailable or network connection lost.");
+        alert("Geocoding connection error. Check your network.");
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = "Add to Map";
@@ -336,16 +343,14 @@
 
     function updateMapMarker(areaKey) {
       const data = districtRegistry[areaKey];
-      let popupHtml = `<div class="popup-gallery">`;
+      let popupHtml = `<div style="width:220px; max-height:280px; overflow-y:auto;">`;
       data.cards.forEach(card => {
         popupHtml += `
-          <div class="popup-item">
-            <div class="popup-title">${card.title}</div>
-            <div class="popup-location">${data.areaName}</div>
-            <img src="${card.image}" />
-            <div class="popup-actions">
-              <button class="popup-delete-btn" onclick="deletePostcard('${card.id}', '${areaKey}')">Delete</button>
-            </div>
+          <div style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:8px;">
+            <strong style="font-size:0.85rem; color:#333;">${card.title}</strong>
+            <div style="font-size:0.75rem; color:#666; margin-bottom:4px;">${data.areaName}</div>
+            <img src="${card.image}" style="width:100%; border-radius:4px; display:block;" />
+            <button onclick="deletePostcard('${card.id}', '${areaKey}')" style="background:#ffebee; color:#c62828; border:none; padding:3px 6px; border-radius:4px; font-size:0.7rem; margin-top:4px; cursor:pointer;">Delete</button>
           </div>`;
       });
       popupHtml += `</div>`;
@@ -396,7 +401,7 @@
               <button class="delete-btn-text">Delete</button>`;
 
             const flyAction = () => {
-              closeVault();
+              hideModal();
               markerClusterGroup.zoomToShowLayer(mapMarkers[key], () => mapMarkers[key].openPopup());
             };
 
