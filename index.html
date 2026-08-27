@@ -5,33 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Pikmin Postcard Vault</title>
 
-  <!-- Favicon & PWA Settings -->
-  <link rel="icon" type="image/png" href="pikminlogo.png">
-  <link rel="apple-touch-icon" href="pikminlogo.png">
-  <meta name="theme-color" content="#2e7d32">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="manifest.json">
-
   <!-- Google Font: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Leaflet CSS & MarkerCluster CSS -->
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet MarkerCluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+
     body, input, button, select, textarea, .leaflet-container, .leaflet-popup-content-wrapper, .leaflet-popup-content {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif !important;
     }
 
-    body { display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #f4f6f8; position: relative; }
+    body { display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #f4f6f8; }
 
     #map { flex: 1; height: 100%; width: 100%; z-index: 1; }
 
@@ -44,7 +40,7 @@
       flex-direction: column;
       z-index: 1000;
       box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-      transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
+      transition: transform 0.3s ease-in-out;
     }
 
     .header { padding: 14px 16px; background: #2e7d32; color: white; display: flex; justify-content: space-between; align-items: center; }
@@ -57,8 +53,8 @@
     .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #555; }
     .form-group input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
     
-    #preview-container { display: none; margin-top: 8px; width: 100%; height: 140px; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; background: #111; }
-    #preview-img { width: 100%; height: 100%; object-fit: contain; }
+    #preview-container { display: none; margin-top: 8px; width: 100%; height: 120px; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; }
+    #preview-img { width: 100%; height: 100%; object-fit: contain; background: #111; }
 
     .btn-primary { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
     .btn-primary:hover { background: #388E3C; }
@@ -70,7 +66,7 @@
     .list-title { font-size: 0.85rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
     
     .mini-card { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; background: #fff; position: relative; }
-    .mini-card img { width: 50px; height: 34px; object-fit: cover; border-radius: 4px; background: #f0f0f0; cursor: pointer; }
+    .mini-card img { width: 50px; height: auto; aspect-ratio: 1023 / 684; object-fit: contain; border-radius: 4px; background: #f0f0f0; cursor: pointer; }
     .mini-card-info { flex: 1; font-size: 0.8rem; cursor: pointer; }
     .mini-card-info strong { display: block; color: #333; }
     .mini-card-info span { color: #666; font-size: 0.75rem; }
@@ -84,17 +80,15 @@
       position: fixed;
       bottom: 24px;
       right: 20px;
-      z-index: 9999;
+      z-index: 999;
       background: #2e7d32;
       color: white;
       border: none;
       padding: 12px 20px;
       border-radius: 30px;
       font-weight: 600;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
       cursor: pointer;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
     }
 
     /* Leaflet Popup Styling */
@@ -111,19 +105,19 @@
       object-fit: contain;
       border-radius: 6px;
       display: block;
-      background: #111;
+      background: #f8f8f8;
     }
 
     .popup-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
     .popup-delete-btn { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
     .popup-delete-btn:hover { background: #ffcdd2; }
 
-    /* Custom Dot Icon Fix */
-    .leaflet-div-icon.custom-dot-marker {
-      background-color: #2e7d32 !important;
-      border: 2px solid #ffffff !important;
-      border-radius: 50% !important;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+    /* Custom Dot Icon */
+    .custom-dot-marker {
+      background-color: #2e7d32;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
 
     /* Custom Styling for Map Clusters */
@@ -136,9 +130,7 @@
       font-weight: bold;
     }
 
-    @media (max-width: 900px) {
-      #mobile-fab { display: block !important; }
-      
+    @media (max-width: 767px) {
       #sidebar {
         position: fixed;
         bottom: 0;
@@ -147,19 +139,12 @@
         max-height: 80vh;
         border-radius: 16px 16px 0 0;
         border-right: none;
-        z-index: 10000;
         transform: translateY(100%);
-        visibility: hidden;
-        pointer-events: none;
       }
 
-      #sidebar.open {
-        transform: translateY(0) !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-      }
-
+      #sidebar.open { transform: translateY(0); }
       .close-btn { display: block; }
+      #mobile-fab { display: block; }
     }
   </style>
 </head>
@@ -213,10 +198,7 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.js"></script>
   
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-
+    // Map bounds configuration with restricted minZoom (Level 4 prevents world-repeat blur)
     const map = L.map('map', { 
       zoomControl: false,
       minZoom: 4,
@@ -225,6 +207,7 @@
 
     L.control.zoom({ position: 'topright' }).addTo(map);
     
+    // Standard OpenStreetMap Tile Layer: High detail, crisp resolution, 100% free with no API keys or watermarks
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       minZoom: 4,
@@ -253,19 +236,14 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Mobile Drawer Controls
-    mobileFab.onclick = function(e) {
-      if (e) e.stopPropagation();
-      sidebar.classList.add('open');
-    };
+    // Drawer Controls
+    mobileFab.addEventListener('click', () => sidebar.classList.add('open'));
+    closeDrawerBtn.addEventListener('click', () => sidebar.classList.remove('open'));
 
-    closeDrawerBtn.onclick = function(e) {
-      if (e) e.stopPropagation();
-      sidebar.classList.remove('open');
-    };
-
+    // Search Listener
     searchInput.addEventListener('input', renderSidebarList);
 
+    // Persistence: Save & Load Functions
     function saveStorage() {
       try {
         localStorage.setItem('pikmin_postcards_db', JSON.stringify(districtRegistry));
@@ -278,78 +256,31 @@
       const savedData = localStorage.getItem('pikmin_postcards_db');
       if (savedData) {
         districtRegistry = JSON.parse(savedData);
-        Object.keys(districtRegistry).forEach(areaKey => updateMapMarker(areaKey));
+        Object.keys(districtRegistry).forEach(areaKey => {
+          updateMapMarker(areaKey);
+        });
         renderSidebarList();
       }
     }
 
-    // Dynamic Image Compression via HTML5 Canvas
+    // Image Upload Handling
     imageInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 800;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-          } else {
-            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          currentBase64Image = canvas.toDataURL('image/jpeg', 0.75);
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          currentBase64Image = event.target.result;
           previewImg.src = currentBase64Image;
           previewContainer.style.display = 'block';
         };
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      }
     });
 
-    // Dual Geocoding Strategy (Nominatim + Fallback)
-    async function fetchCoordinates(area) {
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(area)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-        }
-      } catch (err) {}
-
-      try {
-        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(area)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.features && data.features.length > 0) {
-            const coords = data.features[0].geometry.coordinates;
-            return { lat: coords[1], lng: coords[0] };
-          }
-        }
-      } catch (err) {}
-
-      return null;
-    }
-
+    // Form Processing & Geocoding
     uploadForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      if (!currentBase64Image) {
-        alert("Please select an image standard first.");
-        return;
-      }
-
       const title = document.getElementById('card-title').value.trim();
       const area = document.getElementById('area-input').value.trim();
       const areaKey = area.toLowerCase();
@@ -364,13 +295,16 @@
           lat = districtRegistry[areaKey].lat;
           lng = districtRegistry[areaKey].lng;
         } else {
-          const coords = await fetchCoordinates(area);
-          if (!coords) {
-            alert("Could not find coordinates. Try adding city/country name.");
+          const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(area)}`);
+          const results = await response.json();
+
+          if (!results || results.length === 0) {
+            alert("Could not find coordinates for that area.");
             return;
           }
-          lat = coords.lat;
-          lng = coords.lng;
+
+          lat = parseFloat(results[0].lat);
+          lng = parseFloat(results[0].lon);
         }
 
         if (!districtRegistry[areaKey]) {
@@ -392,13 +326,15 @@
         map.flyTo([lat, lng], 11, { duration: 1.2 });
 
       } catch (err) {
-        alert("Geocoding service unavailable.");
+        console.error(err);
+        alert("Geocoding failed.");
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = "Add to Map";
       }
     });
 
+    // Marker & Popup Logic
     function updateMapMarker(areaKey) {
       const data = districtRegistry[areaKey];
 
@@ -412,7 +348,8 @@
             <div class="popup-actions">
               <button class="popup-delete-btn" onclick="deletePostcard('${card.id}', '${areaKey}')">Delete</button>
             </div>
-          </div>`;
+          </div>
+        `;
       });
       popupHtml += `</div>`;
 
@@ -422,8 +359,7 @@
         const dotIcon = L.divIcon({
           className: 'custom-dot-marker',
           iconSize: [14, 14],
-          iconAnchor: [7, 7],
-          html: ''
+          iconAnchor: [7, 7]
         });
 
         const marker = L.marker([data.lat, data.lng], { icon: dotIcon }).bindPopup(popupHtml);
@@ -432,6 +368,7 @@
       }
     }
 
+    // Delete Logic
     window.deletePostcard = function(cardId, areaKey) {
       const group = districtRegistry[areaKey];
       if (!group) return;
@@ -450,6 +387,7 @@
       renderSidebarList();
     };
 
+    // Sidebar Gallery
     function renderSidebarList() {
       const query = searchInput.value.toLowerCase().trim();
       cardsContainer.innerHTML = "";
@@ -472,6 +410,10 @@
               <button class="delete-btn-text" title="Delete Postcard">Delete</button>
             `;
 
+            const infoArea = cardEl.querySelector('.mini-card-info');
+            const imgArea = cardEl.querySelector('img');
+            const delBtn = cardEl.querySelector('.delete-btn-text');
+
             const flyAction = () => {
               sidebar.classList.remove('open');
               markerClusterGroup.zoomToShowLayer(mapMarkers[key], () => {
@@ -479,9 +421,9 @@
               });
             };
 
-            cardEl.querySelector('.mini-card-info').onclick = flyAction;
-            cardEl.querySelector('img').onclick = flyAction;
-            cardEl.querySelector('.delete-btn-text').onclick = (e) => {
+            infoArea.onclick = flyAction;
+            imgArea.onclick = flyAction;
+            delBtn.onclick = (e) => {
               e.stopPropagation();
               deletePostcard(card.id, key);
             };
@@ -492,6 +434,7 @@
       });
     }
 
+    // Initialize saved data on startup
     loadStorage();
   </script>
 </body>
