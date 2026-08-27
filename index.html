@@ -26,226 +26,225 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body, input, button, select, textarea, .leaflet-container {
+    
+    body, input, button, select, textarea, .leaflet-container, .leaflet-popup-content-wrapper, .leaflet-popup-content {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif !important;
     }
-    body { display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #f4f6f8; position: relative; }
-    #map { width: 100%; height: 100%; z-index: 1; }
 
-    /* Permanent Floating Action Button (FAB) */
-    #vault-trigger-btn {
+    body { display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #f4f6f8; position: relative; }
+
+    #map { flex: 1; height: 100%; width: 100%; z-index: 1; }
+
+    /* Desktop Sidebar Layout */
+    #sidebar {
+      width: 380px;
+      background: #ffffff;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    }
+
+    .header { padding: 14px 16px; background: #2e7d32; color: white; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.1rem; font-weight: 600; }
+    .close-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; display: none; }
+
+    .content-area { overflow-y: auto; flex: 1; }
+    .form-container { padding: 16px; border-bottom: 1px solid #eee; background: #fafafa; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #555; }
+    .form-group input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
+    
+    #preview-container { display: none; margin-top: 8px; width: 100%; height: 140px; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; background: #111; }
+    #preview-img { width: 100%; height: 100%; object-fit: contain; }
+
+    .btn-primary { width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .btn-primary:hover { background: #388E3C; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* Search & Postcard Gallery List */
+    #postcard-list { padding: 16px; }
+    .search-box { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; }
+    .list-title { font-size: 0.85rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
+    
+    .mini-card { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; background: #fff; position: relative; }
+    .mini-card img { width: 50px; height: 34px; object-fit: cover; border-radius: 4px; background: #f0f0f0; cursor: pointer; }
+    .mini-card-info { flex: 1; font-size: 0.8rem; cursor: pointer; }
+    .mini-card-info strong { display: block; color: #333; }
+    .mini-card-info span { color: #666; font-size: 0.75rem; }
+    
+    .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+    .delete-btn-text:hover { background: #ffcdd2; }
+
+    /* Mobile Floating Action Button */
+    #mobile-fab {
+      display: none;
       position: fixed;
       bottom: 24px;
       right: 20px;
-      z-index: 999999;
+      z-index: 9999;
       background: #2e7d32;
-      color: #ffffff;
+      color: white;
       border: none;
-      padding: 14px 22px;
-      border-radius: 50px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
-    #vault-trigger-btn:active {
-      transform: scale(0.96);
-      background: #1b5e20;
-    }
 
-    /* Modal Backdrop */
-    #modal-backdrop {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 1000000;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    #modal-backdrop.active {
-      display: flex !important;
-    }
-
-    /* Vault Modal Window */
-    #vault-modal {
-      background: #ffffff;
-      width: 100%;
-      max-width: 440px;
-      max-height: 85vh;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      z-index: 1000001;
-    }
-
-    .modal-header {
-      padding: 14px 18px;
-      background: #2e7d32;
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-header h2 { font-size: 1.1rem; font-weight: 700; }
-    .close-modal-btn {
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: white;
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      font-size: 1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-body { overflow-y: auto; flex: 1; padding: 16px; }
-
-    .form-container {
-      background: #f8f9fa;
-      padding: 14px;
-      border-radius: 10px;
-      border: 1px solid #e9ecef;
-      margin-bottom: 16px;
-    }
-    .form-group { margin-bottom: 10px; }
-    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #495057; }
-    .form-group input { width: 100%; padding: 8px 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 0.88rem; }
-    #preview-container { display: none; margin-top: 8px; width: 100%; height: 140px; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; background: #111; }
-    #preview-img { width: 100%; height: 100%; object-fit: contain; }
+    /* Leaflet Popup Styling */
+    .popup-gallery { width: 250px; max-height: 320px; overflow-y: auto; padding: 2px; }
+    .popup-item { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+    .popup-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .popup-title { font-weight: 700; font-size: 0.88rem; color: #2c3e50; line-height: 1.2; }
+    .popup-location { font-size: 0.75rem; color: #666; margin-top: 2px; margin-bottom: 6px; }
     
-    .btn-submit {
+    .popup-item img {
       width: 100%;
-      padding: 10px;
-      background: #2e7d32;
-      color: white;
-      border: none;
+      height: auto;
+      aspect-ratio: 1023 / 684;
+      object-fit: contain;
       border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 4px;
+      display: block;
+      background: #111;
     }
-    .btn-submit:disabled { background: #adb5bd; cursor: not-allowed; }
 
-    .search-box { width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; }
-    .list-title { font-size: 0.8rem; font-weight: 700; color: #6c757d; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
-    
-    .mini-card { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 8px; background: #fff; }
-    .mini-card img { width: 48px; height: 32px; object-fit: cover; border-radius: 4px; background: #eee; cursor: pointer; }
-    .mini-card-info { flex: 1; font-size: 0.8rem; cursor: pointer; }
-    .mini-card-info strong { display: block; color: #212529; }
-    .mini-card-info span { color: #6c757d; font-size: 0.75rem; }
-    .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .popup-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+    .popup-delete-btn { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .popup-delete-btn:hover { background: #ffcdd2; }
 
-    /* Map Dot Marker Override */
+    /* Custom Dot Icon Fix */
     .leaflet-div-icon.custom-dot-marker {
       background-color: #2e7d32 !important;
       border: 2px solid #ffffff !important;
       border-radius: 50% !important;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
     }
-    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background-color: rgba(46, 125, 50, 0.3) !important; }
-    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
+
+    /* Custom Styling for Map Clusters */
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+      background-color: rgba(46, 125, 50, 0.3) !important;
+    }
+    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+      background-color: #2e7d32 !important;
+      color: white !important;
+      font-weight: bold;
+    }
+
+    @media (max-width: 900px) {
+      #mobile-fab { display: block !important; }
+      
+      #sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        max-height: 80vh;
+        border-radius: 16px 16px 0 0;
+        border-right: none;
+        z-index: 10000;
+        transform: translateY(100%);
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      #sidebar.open {
+        transform: translateY(0) !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+      }
+
+      .close-btn { display: block; }
+    }
   </style>
 </head>
 <body>
 
-  <!-- Map Canvas -->
-  <div id="map"></div>
+  <button id="mobile-fab">Add / View Cards</button>
 
-  <!-- Permanent Trigger Button -->
-  <button id="vault-trigger-btn" onclick="openVaultModal()">✚ Open Vault</button>
+  <div id="sidebar">
+    <div class="header">
+      <h1>Postcard Vault</h1>
+      <button class="close-btn" id="close-drawer-btn">✕</button>
+    </div>
 
-  <!-- Modal Screen Overlay -->
-  <div id="modal-backdrop" onclick="closeOnBackdrop(event)">
-    <div id="vault-modal">
-      <div class="modal-header">
-        <h2>Pikmin Postcard Vault</h2>
-        <button class="close-modal-btn" onclick="closeVaultModal()">✕</button>
+    <div class="content-area">
+      <div class="form-container">
+        <form id="upload-form">
+          <div class="form-group">
+            <label for="card-title">Postcard Title</label>
+            <input type="text" id="card-title" placeholder="e.g., Pikmin Monument" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="area-input">District / Area</label>
+            <input type="text" id="area-input" placeholder="e.g., Kita Ward, Osaka" required />
+          </div>
+
+          <div class="form-group">
+            <label for="image-input">Postcard Screenshot</label>
+            <input type="file" id="image-input" accept="image/*" required />
+            <div id="preview-container">
+              <img id="preview-img" src="" alt="Preview" />
+            </div>
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn-primary">Add to Map</button>
+        </form>
       </div>
 
-      <div class="modal-body">
-        <div class="form-container">
-          <form id="upload-form">
-            <div class="form-group">
-              <label for="card-title">Postcard Title</label>
-              <input type="text" id="card-title" placeholder="e.g., Pikmin Monument" required />
-            </div>
-
-            <div class="form-group">
-              <label for="area-input">District / City Area</label>
-              <input type="text" id="area-input" placeholder="e.g., Central, Hong Kong" required />
-            </div>
-
-            <div class="form-group">
-              <label for="image-input">Postcard Image</label>
-              <input type="file" id="image-input" accept="image/*" required />
-              <div id="preview-container">
-                <img id="preview-img" src="" alt="Preview" />
-              </div>
-            </div>
-
-            <button type="submit" id="submit-btn" class="btn-submit">Add to Map</button>
-          </form>
-        </div>
-
-        <div>
-          <div class="list-title">Saved Postcards</div>
-          <input type="text" id="search-input" class="search-box" placeholder="Search saved cards..." />
-          <div id="cards-container"></div>
-        </div>
+      <div id="postcard-list">
+        <div class="list-title">Saved Postcards</div>
+        <input type="text" id="search-input" class="search-box" placeholder="Search by title or district..." />
+        <div id="cards-container"></div>
       </div>
     </div>
   </div>
 
+  <div id="map"></div>
+
   <!-- Leaflet JS & MarkerCluster JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.js"></script>
-
+  
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
-    // Modal Controls
-    window.openVaultModal = function() {
-      document.getElementById('modal-backdrop').classList.add('active');
-    };
+    const map = L.map('map', { 
+      zoomControl: false,
+      minZoom: 4,
+      maxZoom: 19
+    }).setView([23.9756, 120.9738], 7);
 
-    window.closeVaultModal = function() {
-      document.getElementById('modal-backdrop').classList.remove('active');
-    };
-
-    window.closeOnBackdrop = function(e) {
-      if (e.target.id === 'modal-backdrop') {
-        window.closeVaultModal();
-      }
-    };
-
-    const map = L.map('map', { zoomControl: false, minZoom: 3, maxZoom: 19 }).setView([22.3193, 114.1694], 10);
     L.control.zoom({ position: 'topright' }).addTo(map);
-
+    
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors', minZoom: 3, maxZoom: 19
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      minZoom: 4,
+      maxZoom: 19
     }).addTo(map);
 
-    const markerClusterGroup = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 45 });
+    const markerClusterGroup = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      maxClusterRadius: 45
+    });
     map.addLayer(markerClusterGroup);
 
     let districtRegistry = {};
     const mapMarkers = {};
     let currentBase64Image = "";
 
+    // DOM References
+    const sidebar = document.getElementById('sidebar');
+    const mobileFab = document.getElementById('mobile-fab');
+    const closeDrawerBtn = document.getElementById('close-drawer-btn');
     const imageInput = document.getElementById('image-input');
     const previewContainer = document.getElementById('preview-container');
     const previewImg = document.getElementById('preview-img');
@@ -254,13 +253,24 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
+    // Mobile Drawer Controls
+    mobileFab.onclick = function(e) {
+      if (e) e.stopPropagation();
+      sidebar.classList.add('open');
+    };
+
+    closeDrawerBtn.onclick = function(e) {
+      if (e) e.stopPropagation();
+      sidebar.classList.remove('open');
+    };
+
     searchInput.addEventListener('input', renderSidebarList);
 
     function saveStorage() {
       try {
         localStorage.setItem('pikmin_postcards_db', JSON.stringify(districtRegistry));
       } catch (e) {
-        alert("Storage limit reached. Try deleting older cards.");
+        alert("Storage limit reached! Try removing older cards.");
       }
     }
 
@@ -273,7 +283,7 @@
       }
     }
 
-    // Canvas Compression for Image Preview & Storage Optimization
+    // Dynamic Image Compression via HTML5 Canvas
     imageInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -308,15 +318,15 @@
       reader.readAsDataURL(file);
     });
 
-    // Dual-Service Geocoding Helper
-    async function geocodeAddress(area) {
+    // Dual Geocoding Strategy (Nominatim + Fallback)
+    async function fetchCoordinates(area) {
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(area)}`);
         if (res.ok) {
           const data = await res.json();
           if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
         }
-      } catch (e) {}
+      } catch (err) {}
 
       try {
         const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(area)}`);
@@ -327,15 +337,16 @@
             return { lat: coords[1], lng: coords[0] };
           }
         }
-      } catch (e) {}
+      } catch (err) {}
 
       return null;
     }
 
     uploadForm.addEventListener('submit', async function(e) {
       e.preventDefault();
+      
       if (!currentBase64Image) {
-        alert("Please select an image first.");
+        alert("Please select an image standard first.");
         return;
       }
 
@@ -344,17 +355,18 @@
       const areaKey = area.toLowerCase();
 
       submitBtn.disabled = true;
-      submitBtn.innerText = "Locating...";
+      submitBtn.innerText = "Finding location...";
 
       try {
         let lat, lng;
+
         if (districtRegistry[areaKey]) {
           lat = districtRegistry[areaKey].lat;
           lng = districtRegistry[areaKey].lng;
         } else {
-          const coords = await geocodeAddress(area);
+          const coords = await fetchCoordinates(area);
           if (!coords) {
-            alert("Could not locate area. Try adding a city or country.");
+            alert("Could not find coordinates. Try adding city/country name.");
             return;
           }
           lat = coords.lat;
@@ -365,7 +377,7 @@
           districtRegistry[areaKey] = { areaName: area, lat, lng, cards: [] };
         }
 
-        const cardId = 'card_' + Date.now();
+        const cardId = 'card_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
         districtRegistry[areaKey].cards.push({ id: cardId, title, image: currentBase64Image });
 
         saveStorage();
@@ -376,10 +388,11 @@
         previewContainer.style.display = 'none';
         currentBase64Image = "";
 
-        window.closeVaultModal();
-        map.flyTo([lat, lng], 12, { duration: 1.2 });
+        sidebar.classList.remove('open');
+        map.flyTo([lat, lng], 11, { duration: 1.2 });
+
       } catch (err) {
-        alert("An error occurred while saving.");
+        alert("Geocoding service unavailable.");
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = "Add to Map";
@@ -388,14 +401,17 @@
 
     function updateMapMarker(areaKey) {
       const data = districtRegistry[areaKey];
-      let popupHtml = `<div style="width:220px; max-height:280px; overflow-y:auto;">`;
+
+      let popupHtml = `<div class="popup-gallery">`;
       data.cards.forEach(card => {
         popupHtml += `
-          <div style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:8px;">
-            <strong style="font-size:0.85rem; color:#333;">${card.title}</strong>
-            <div style="font-size:0.75rem; color:#666; margin-bottom:4px;">${data.areaName}</div>
-            <img src="${card.image}" style="width:100%; border-radius:4px; display:block;" />
-            <button onclick="deletePostcard('${card.id}', '${areaKey}')" style="background:#ffebee; color:#c62828; border:none; padding:3px 6px; border-radius:4px; font-size:0.7rem; margin-top:4px; cursor:pointer;">Delete</button>
+          <div class="popup-item">
+            <div class="popup-title">${card.title}</div>
+            <div class="popup-location">${data.areaName}</div>
+            <img src="${card.image}" />
+            <div class="popup-actions">
+              <button class="popup-delete-btn" onclick="deletePostcard('${card.id}', '${areaKey}')">Delete</button>
+            </div>
           </div>`;
       });
       popupHtml += `</div>`;
@@ -403,7 +419,13 @@
       if (mapMarkers[areaKey]) {
         mapMarkers[areaKey].setPopupContent(popupHtml);
       } else {
-        const dotIcon = L.divIcon({ className: 'custom-dot-marker', iconSize: [14, 14], iconAnchor: [7, 7], html: '' });
+        const dotIcon = L.divIcon({
+          className: 'custom-dot-marker',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+          html: ''
+        });
+
         const marker = L.marker([data.lat, data.lng], { icon: dotIcon }).bindPopup(popupHtml);
         markerClusterGroup.addLayer(marker);
         mapMarkers[areaKey] = marker;
@@ -413,6 +435,7 @@
     window.deletePostcard = function(cardId, areaKey) {
       const group = districtRegistry[areaKey];
       if (!group) return;
+
       group.cards = group.cards.filter(c => c.id !== cardId);
 
       if (group.cards.length === 0) {
@@ -434,7 +457,10 @@
       Object.keys(districtRegistry).forEach(key => {
         const group = districtRegistry[key];
         group.cards.forEach(card => {
-          if (card.title.toLowerCase().includes(query) || group.areaName.toLowerCase().includes(query)) {
+          const matchesTitle = card.title.toLowerCase().includes(query);
+          const matchesLocation = group.areaName.toLowerCase().includes(query);
+
+          if (matchesTitle || matchesLocation) {
             const cardEl = document.createElement('div');
             cardEl.className = 'mini-card';
             cardEl.innerHTML = `
@@ -443,11 +469,14 @@
                 <strong>${card.title}</strong>
                 <span>${group.areaName}</span>
               </div>
-              <button class="delete-btn-text">Delete</button>`;
+              <button class="delete-btn-text" title="Delete Postcard">Delete</button>
+            `;
 
             const flyAction = () => {
-              window.closeVaultModal();
-              markerClusterGroup.zoomToShowLayer(mapMarkers[key], () => mapMarkers[key].openPopup());
+              sidebar.classList.remove('open');
+              markerClusterGroup.zoomToShowLayer(mapMarkers[key], () => {
+                mapMarkers[key].openPopup();
+              });
             };
 
             cardEl.querySelector('.mini-card-info').onclick = flyAction;
