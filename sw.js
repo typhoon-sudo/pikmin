@@ -1,11 +1,19 @@
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
+const CACHE_NAME = 'pikmin-vault-v1';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './pikminlogo.png'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
 });
 
-self.addEventListener('activate', (e) => {
-  return self.clients.claim();
-});
-
-self.addEventListener('fetch', (e) => {
-  e.respondWith(fetch(e.request));
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => response || fetch(event.request))
+  );
 });
