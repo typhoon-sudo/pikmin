@@ -1,6 +1,6 @@
 {
   "name": "Pikmin Postcard Vault",
-  "short_name": "PostcardVault",
+  "short_name": "Postcard Vault",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
