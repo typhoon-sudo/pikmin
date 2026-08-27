@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Leaflet CSS -->
+  <!-- Leaflet CSS & MarkerCluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
@@ -64,21 +64,20 @@
     .mini-card-info span { color: #666; font-size: 0.75rem; }
     .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 
-    /* Mobile Floating Action Button */
-    #mobile-fab {
+    /* Leaflet Custom Control Styling for Mobile Button */
+    .leaflet-bottom.leaflet-right .mobile-fab-control {
       display: none;
-      position: fixed;
-      bottom: 24px;
-      right: 20px;
-      z-index: 99999;
       background: #2e7d32;
-      color: white;
+      color: #ffffff;
       border: none;
-      padding: 14px 22px;
+      padding: 12px 20px;
       border-radius: 30px;
       font-weight: 600;
+      font-size: 0.9rem;
       box-shadow: 0 4px 14px rgba(0,0,0,0.35);
       cursor: pointer;
+      margin-bottom: 20px;
+      margin-right: 15px;
     }
 
     .popup-gallery { width: 250px; max-height: 320px; overflow-y: auto; padding: 2px; }
@@ -94,7 +93,10 @@
     .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background-color: rgba(46, 125, 50, 0.3) !important; }
     .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
 
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
+      .leaflet-bottom.leaflet-right .mobile-fab-control {
+        display: block !important;
+      }
       #sidebar {
         position: fixed;
         bottom: 0;
@@ -106,15 +108,12 @@
         z-index: 100000;
         transform: translateY(100%);
       }
-      #sidebar.open { transform: translateY(0); }
+      #sidebar.open { transform: translateY(0) !important; }
       .close-btn { display: block; }
-      #mobile-fab { display: block; }
     }
   </style>
 </head>
 <body>
-
-  <div id="map"></div>
 
   <div id="sidebar">
     <div class="header">
@@ -155,8 +154,9 @@
     </div>
   </div>
 
-  <button id="mobile-fab" type="button">Add / View Cards</button>
+  <div id="map"></div>
 
+  <!-- Leaflet JS & MarkerCluster JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.js"></script>
   
@@ -180,7 +180,6 @@
     let currentBase64Image = "";
 
     const sidebar = document.getElementById('sidebar');
-    const mobileFab = document.getElementById('mobile-fab');
     const closeDrawerBtn = document.getElementById('close-drawer-btn');
     const imageInput = document.getElementById('image-input');
     const previewContainer = document.getElementById('preview-container');
@@ -190,10 +189,28 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Simple Event Handlers
-    mobileFab.onclick = function() {
-      sidebar.classList.add('open');
-    };
+    // Create Official Leaflet Control for Mobile Floating Action Button
+    const MobileFabControl = L.Control.extend({
+      options: { position: 'bottomright' },
+      onAdd: function(map) {
+        const btn = L.DomUtil.create('button', 'mobile-fab-control');
+        btn.innerText = 'Add / View Cards';
+        
+        // Disable Leaflet's map drag/touch capturing on the button
+        L.DomEvent.disableClickPropagation(btn);
+        L.DomEvent.disableScrollPropagation(btn);
+        
+        // Handle touch & click reliably across mobile devices
+        L.DomEvent.on(btn, 'click', function(e) {
+          L.DomEvent.stopPropagation(e);
+          sidebar.classList.add('open');
+        });
+
+        return btn;
+      }
+    });
+
+    map.addControl(new MobileFabControl());
 
     closeDrawerBtn.onclick = function() {
       sidebar.classList.remove('open');
