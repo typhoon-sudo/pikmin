@@ -15,8 +15,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- Inline Web App Manifest with Absolute URL for GitHub Pages -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Pikmin Postcard Vault","short_name":"Postcards","start_url":"/pikmin/","display":"standalone","background_color":"#ffffff","theme_color":"#2e7d32","icons":[{"src":"https://typhoon-sudo.github.io/pikmin/pikminlogo.png","sizes":"192x192 512x512","type":"image/png"}]}'>
+  <!-- Standalone Manifest File -->
+  <link rel="manifest" href="manifest.json">
 
   <!-- Google Font: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -67,7 +67,6 @@
     .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
     .delete-btn-text:hover { background: #ffcdd2; }
 
-    /* Mobile Floating Action Button - High Z-Index to Overlap Leaflet Map */
     #mobile-fab {
       display: none; position: fixed; bottom: 24px; right: 20px; z-index: 10001;
       background: #2e7d32; color: white; border: none; padding: 12px 20px;
@@ -147,10 +146,9 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.js"></script>
   
   <script>
+    // Register standalone sw.js
     if ('serviceWorker' in navigator) {
-      const swCode = `self.addEventListener('fetch', function(e) { e.respondWith(fetch(e.request)); });`;
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+      navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
     const map = L.map('map', { zoomControl: false, minZoom: 4, maxZoom: 19 }).setView([23.9756, 120.9738], 7);
@@ -178,7 +176,6 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Mobile FAB Event Handlers (Support both Click & Touchstart)
     function toggleDrawer(e) {
       if (e) {
         e.preventDefault();
