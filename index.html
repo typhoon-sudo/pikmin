@@ -71,6 +71,7 @@
       flex-direction: column;
       transform: translateY(calc(100% - 54px));
       transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: auto;
     }
 
     #bottom-drawer.open {
@@ -91,6 +92,9 @@
       user-select: none;
       touch-action: none;
       padding: 6px 16px;
+      position: relative;
+      z-index: 100000;
+      pointer-events: auto;
     }
 
     .handle-pill {
@@ -99,6 +103,7 @@
       background: rgba(255, 255, 255, 0.6);
       border-radius: 2px;
       margin-bottom: 6px;
+      pointer-events: none;
     }
 
     .handle-text {
@@ -106,6 +111,7 @@
       font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
+      pointer-events: none;
     }
 
     .content-area { overflow-y: auto; flex: 1; }
@@ -197,7 +203,12 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
-    const map = L.map('map', { zoomControl: false, minZoom: 4, maxZoom: 19 }).setView([23.9756, 120.9738], 7);
+    const map = L.map('map', { 
+      zoomControl: false, 
+      minZoom: 4, 
+      maxZoom: 19,
+      tap: true // Enable tap handling
+    }).setView([23.9756, 120.9738], 7);
     L.control.zoom({ position: 'topright' }).addTo(map);
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -223,10 +234,6 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Completely isolate handle element from Leaflet map touches
-    L.DomEvent.disableClickPropagation(drawerHandle);
-    L.DomEvent.disableScrollPropagation(drawerHandle);
-
     function openVault() {
       bottomDrawer.classList.add('open');
       drawerBackdrop.classList.add('active');
@@ -247,45 +254,68 @@
       }
     }
 
-    // Direct Tap/Click Handling
+    // Click/Tap handling
     drawerHandle.addEventListener('click', function(e) {
+      e.preventDefault();
       e.stopPropagation();
       toggleVault();
     });
 
     drawerBackdrop.addEventListener('click', closeVault);
 
-    // Touch Swipe Gesture Handling for Bottom Sheet
+    // Touch Swipe Gesture Handling
     let startY = 0;
-    let isDragging = false;
+    let startX = 0;
+    let isSwiping = false;
+    let swipeThreshold = 30; // Minimum distance for swipe
 
     drawerHandle.addEventListener('touchstart', function(e) {
-      startY = e.touches[0].clientY;
-      isDragging = true;
+      const touch = e.touches[0];
+      startY = touch.clientY;
+      startX = touch.clientX;
+      isSwiping = true;
+      e.preventDefault(); // Prevent default to stop map interaction
       e.stopPropagation();
     }, { passive: false });
 
     drawerHandle.addEventListener('touchmove', function(e) {
-      if (isDragging) {
-        e.preventDefault();
+      if (isSwiping) {
+        e.preventDefault(); // Prevent scrolling while swiping
         e.stopPropagation();
       }
     }, { passive: false });
 
     drawerHandle.addEventListener('touchend', function(e) {
-      if (!isDragging) return;
-      isDragging = false;
+      if (!isSwiping) return;
+      isSwiping = false;
+      
+      const touch = e.changedTouches[0];
+      const deltaY = startY - touch.clientY; // Positive = swiped up
+      const deltaX = startX - touch.clientX;
+      
+      e.preventDefault();
       e.stopPropagation();
 
-      const endY = e.changedTouches[0].clientY;
-      const deltaY = startY - endY; // Positive = Swiped UP, Negative = Swiped DOWN
-
-      if (deltaY > 25) {
-        openVault();
-      } else if (deltaY < -25) {
-        closeVault();
+      // Check if it's more vertical than horizontal
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        if (deltaY > swipeThreshold) {
+          // Swiped up
+          openVault();
+        } else if (deltaY < -swipeThreshold) {
+          // Swiped down
+          closeVault();
+        }
       }
     }, { passive: false });
+
+    // Also handle touchcancel
+    drawerHandle.addEventListener('touchcancel', function(e) {
+      isSwiping = false;
+    });
+
+    // Prevent map interactions when interacting with the drawer
+    L.DomEvent.disableClickPropagation(bottomDrawer);
+    L.DomEvent.disableScrollPropagation(bottomDrawer);
 
     searchInput.addEventListener('input', renderSidebarList);
 
