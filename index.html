@@ -5,14 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Pikmin Postcard Vault</title>
 
+  <!-- Favicon & Apple Touch Icon -->
+  <link rel="icon" type="image/png" href="pikminlogo.png">
+  <link rel="apple-touch-icon" href="pikminlogo.png">
+
   <!-- PWA Settings for Android -->
   <meta name="theme-color" content="#2e7d32">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- Inline Web App Manifest for Native Android Installation -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Pikmin Postcard Vault","short_name":"Postcards","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#2e7d32","icons":[{"src":"https://leafletjs.com/examples/custom-icons/leaf-green.png","sizes":"512x512","type":"image/png"}]}'>
+  <!-- Inline Web App Manifest pointing to pikminlogo.png -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Pikmin Postcard Vault","short_name":"Postcards","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#2e7d32","icons":[{"src":"pikminlogo.png","sizes":"192x192 512x512","type":"image/png"}]}'>
 
   <!-- Google Font: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -141,7 +145,6 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.js"></script>
   
   <script>
-    // Register basic Service Worker for PWA compliance
     if ('serviceWorker' in navigator) {
       const swCode = `self.addEventListener('fetch', function(e) { e.respondWith(fetch(e.request)); });`;
       const blob = new Blob([swCode], { type: 'application/javascript' });
