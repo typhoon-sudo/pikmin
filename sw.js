@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pikmin-vault-v1';
+const CACHE_NAME = 'pikmin-vault-v2';
 const ASSETS = [
   './',
   './index.html',
