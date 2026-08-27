@@ -35,9 +35,51 @@
     body { display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #f4f6f8; position: relative; }
     #map { flex: 1; height: 100%; width: 100%; z-index: 1; }
 
+    /* Dimmed Backdrop for Mobile Drawer */
+    #drawer-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 99998;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    #drawer-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Edge Pull-Tab Handle */
+    #drawer-tab {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 35%;
+      z-index: 99997;
+      background: #2e7d32;
+      color: #ffffff;
+      padding: 12px 10px 12px 6px;
+      border-radius: 0 12px 12px 0;
+      box-shadow: 3px 2px 10px rgba(0,0,0,0.3);
+      cursor: pointer;
+      user-select: none;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      transition: transform 0.3s ease, background 0.2s ease;
+    }
+    #drawer-tab:active { background: #1b5e20; }
+
     #sidebar {
       width: 380px; background: #ffffff; border-right: 1px solid #e0e0e0;
-      display: flex; flex-direction: column; z-index: 100000;
+      display: flex; flex-direction: column; z-index: 99999;
       box-shadow: 2px 0 10px rgba(0,0,0,0.1); transition: transform 0.3s ease-in-out;
     }
     .header { padding: 14px 16px; background: #2e7d32; color: white; display: flex; justify-content: space-between; align-items: center; }
@@ -64,30 +106,6 @@
     .mini-card-info span { color: #666; font-size: 0.75rem; }
     .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 
-    /* HIGH VISIBILITY DRASTIC EDGE TOUCH ZONE */
-    #edge-touch-zone {
-      display: none;
-      position: fixed;
-      left: 0;
-      top: 0;
-      width: 140px;
-      height: 100vh;
-      z-index: 99999;
-      background: rgba(46, 125, 50, 0.88);
-      color: #ffffff;
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.85rem;
-      letter-spacing: 2px;
-      box-shadow: -4px 0 20px rgba(0,0,0,0.5);
-      touch-action: none;
-      cursor: pointer;
-      user-select: none;
-    }
-
     .popup-gallery { width: 250px; max-height: 320px; overflow-y: auto; padding: 2px; }
     .popup-item { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
     .popup-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
@@ -102,7 +120,7 @@
     .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
 
     @media (max-width: 900px) {
-      #edge-touch-zone { display: flex; }
+      #drawer-tab, #drawer-backdrop { display: block; }
       #sidebar {
         position: fixed;
         top: 0;
@@ -119,8 +137,8 @@
 </head>
 <body>
 
-  <!-- Drastic Touch Banner -->
-  <div id="edge-touch-zone">▶ TAP OR SWIPE TO OPEN VAULT</div>
+  <div id="drawer-backdrop"></div>
+  <div id="drawer-tab">✚ VAULT</div>
 
   <div id="sidebar">
     <div class="header">
@@ -188,7 +206,8 @@
 
     const sidebar = document.getElementById('sidebar');
     const closeDrawerBtn = document.getElementById('close-drawer-btn');
-    const edgeTouchZone = document.getElementById('edge-touch-zone');
+    const drawerTab = document.getElementById('drawer-tab');
+    const drawerBackdrop = document.getElementById('drawer-backdrop');
     const imageInput = document.getElementById('image-input');
     const previewContainer = document.getElementById('preview-container');
     const previewImg = document.getElementById('preview-img');
@@ -197,47 +216,23 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Completely block Leaflet from dragging/interacting when touching this zone
-    L.DomEvent.disableClickPropagation(edgeTouchZone);
-    L.DomEvent.disableScrollPropagation(edgeTouchZone);
+    // Prevent Leaflet Map events on controls
+    L.DomEvent.disableClickPropagation(drawerTab);
+    L.DomEvent.disableTouchPropagation(drawerTab);
 
-    const openDrawer = function(e) {
-      if (e) L.DomEvent.stopPropagation(e);
+    function openVault() {
       sidebar.classList.add('open');
-    };
+      drawerBackdrop.classList.add('active');
+    }
 
-    // Direct click/tap listener on the banner
-    edgeTouchZone.addEventListener('click', openDrawer);
-
-    let touchStartX = 0;
-
-    edgeTouchZone.addEventListener('touchstart', function(e) {
-      touchStartX = e.touches[0].clientX;
-    }, { passive: true });
-
-    edgeTouchZone.addEventListener('touchend', function(e) {
-      const deltaX = e.changedTouches[0].clientX - touchStartX;
-      // Trigger if swiped right OR if tapped
-      if (deltaX > 10 || Math.abs(deltaX) < 10) {
-        openDrawer(e);
-      }
-    }, { passive: true });
-
-    // Swipe left to close when sidebar is open
-    sidebar.addEventListener('touchstart', function(e) {
-      touchStartX = e.touches[0].clientX;
-    }, { passive: true });
-
-    sidebar.addEventListener('touchend', function(e) {
-      const deltaX = e.changedTouches[0].clientX - touchStartX;
-      if (deltaX < -30) {
-        sidebar.classList.remove('open');
-      }
-    }, { passive: true });
-
-    closeDrawerBtn.onclick = function() {
+    function closeVault() {
       sidebar.classList.remove('open');
-    };
+      drawerBackdrop.classList.remove('active');
+    }
+
+    drawerTab.addEventListener('click', openVault);
+    drawerBackdrop.addEventListener('click', closeVault);
+    closeDrawerBtn.addEventListener('click', closeVault);
 
     searchInput.addEventListener('input', renderSidebarList);
 
@@ -308,7 +303,7 @@
         previewContainer.style.display = 'none';
         currentBase64Image = "";
 
-        sidebar.classList.remove('open');
+        closeVault();
         map.flyTo([lat, lng], 11, { duration: 1.2 });
       } catch (err) {
         alert("Geocoding failed.");
@@ -380,7 +375,7 @@
               <button class="delete-btn-text">Delete</button>`;
 
             const flyAction = () => {
-              sidebar.classList.remove('open');
+              closeVault();
               markerClusterGroup.zoomToShowLayer(mapMarkers[key], () => mapMarkers[key].openPopup());
             };
 
