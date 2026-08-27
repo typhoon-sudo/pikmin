@@ -121,8 +121,8 @@
     .form-group { margin-bottom: 10px; }
     .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #495057; }
     .form-group input { width: 100%; padding: 8px 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 0.88rem; }
-    #preview-container { display: none; margin-top: 8px; width: 100%; height: 110px; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; }
-    #preview-img { width: 100%; height: 100%; object-fit: contain; background: #111; }
+    #preview-container { display: none; margin-top: 8px; width: 100%; height: 140px; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; background: #111; }
+    #preview-img { width: 100%; height: 100%; object-fit: contain; }
     
     .btn-submit {
       width: 100%;
@@ -147,7 +147,13 @@
     .mini-card-info span { color: #6c757d; font-size: 0.75rem; }
     .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 
-    .custom-dot-marker { background-color: #2e7d32; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+    /* Map Dot Marker Override */
+    .leaflet-div-icon.custom-dot-marker {
+      background-color: #2e7d32 !important;
+      border: 2px solid #ffffff !important;
+      border-radius: 50% !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+    }
     .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background-color: rgba(46, 125, 50, 0.3) !important; }
     .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
   </style>
@@ -157,7 +163,7 @@
   <!-- Map Canvas -->
   <div id="map"></div>
 
-  <!-- Permanent Trigger Button with Inline Handler -->
+  <!-- Permanent Trigger Button -->
   <button id="vault-trigger-btn" onclick="openVaultModal()">✚ Open Vault</button>
 
   <!-- Modal Screen Overlay -->
@@ -211,7 +217,7 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
-    // Modal Control Functions (Globally Accessible)
+    // Modal Controls
     window.openVaultModal = function() {
       document.getElementById('modal-backdrop').classList.add('active');
     };
@@ -254,7 +260,7 @@
       try {
         localStorage.setItem('pikmin_postcards_db', JSON.stringify(districtRegistry));
       } catch (e) {
-        alert("Local storage limit reached.");
+        alert("Storage limit reached. Try deleting older cards.");
       }
     }
 
@@ -267,21 +273,72 @@
       }
     }
 
+    // Canvas Compression for Image Preview & Storage Optimization
     imageInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          currentBase64Image = event.target.result;
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+          } else {
+            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          currentBase64Image = canvas.toDataURL('image/jpeg', 0.75);
           previewImg.src = currentBase64Image;
           previewContainer.style.display = 'block';
         };
-        reader.readAsDataURL(file);
-      }
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
     });
+
+    // Dual-Service Geocoding Helper
+    async function geocodeAddress(area) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(area)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        }
+      } catch (e) {}
+
+      try {
+        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(area)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.features && data.features.length > 0) {
+            const coords = data.features[0].geometry.coordinates;
+            return { lat: coords[1], lng: coords[0] };
+          }
+        }
+      } catch (e) {}
+
+      return null;
+    }
 
     uploadForm.addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (!currentBase64Image) {
+        alert("Please select an image first.");
+        return;
+      }
+
       const title = document.getElementById('card-title').value.trim();
       const area = document.getElementById('area-input').value.trim();
       const areaKey = area.toLowerCase();
@@ -295,16 +352,13 @@
           lat = districtRegistry[areaKey].lat;
           lng = districtRegistry[areaKey].lng;
         } else {
-          const endpoint = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(area)}`;
-          const response = await fetch(endpoint, { headers: { 'Accept-Language': 'en' } });
-          const results = await response.json();
-          
-          if (!results || results.length === 0) {
-            alert("Could not locate that area. Try adding a city or country name.");
+          const coords = await geocodeAddress(area);
+          if (!coords) {
+            alert("Could not locate area. Try adding a city or country.");
             return;
           }
-          lat = parseFloat(results[0].lat);
-          lng = parseFloat(results[0].lon);
+          lat = coords.lat;
+          lng = coords.lng;
         }
 
         if (!districtRegistry[areaKey]) {
@@ -325,7 +379,7 @@
         window.closeVaultModal();
         map.flyTo([lat, lng], 12, { duration: 1.2 });
       } catch (err) {
-        alert("Geocoding connection error. Check your network.");
+        alert("An error occurred while saving.");
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = "Add to Map";
@@ -349,7 +403,7 @@
       if (mapMarkers[areaKey]) {
         mapMarkers[areaKey].setPopupContent(popupHtml);
       } else {
-        const dotIcon = L.divIcon({ className: 'custom-dot-marker', iconSize: [14, 14], iconAnchor: [7, 7] });
+        const dotIcon = L.divIcon({ className: 'custom-dot-marker', iconSize: [14, 14], iconAnchor: [7, 7], html: '' });
         const marker = L.marker([data.lat, data.lng], { icon: dotIcon }).bindPopup(popupHtml);
         markerClusterGroup.addLayer(marker);
         mapMarkers[areaKey] = marker;
