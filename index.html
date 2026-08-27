@@ -64,21 +64,19 @@
     .mini-card-info span { color: #666; font-size: 0.75rem; }
     .delete-btn-text { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 
-    /* Leaflet Custom Control Styling for Floating Action Button */
-    .leaflet-bottom.leaflet-right .mobile-fab-control {
-      display: block;
-      background: #2e7d32;
-      color: #ffffff;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 30px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
-      cursor: pointer;
-      margin-bottom: 20px;
-      margin-right: 15px;
-      z-index: 1000;
+    /* Visual edge hint indicator for mobile */
+    .swipe-hint {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 48px;
+      background: rgba(46, 125, 50, 0.6);
+      border-radius: 0 4px 4px 0;
+      z-index: 999;
+      pointer-events: none;
     }
 
     .popup-gallery { width: 250px; max-height: 320px; overflow-y: auto; padding: 2px; }
@@ -95,23 +93,25 @@
     .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: #2e7d32 !important; color: white !important; font-weight: bold; }
 
     @media (max-width: 900px) {
+      .swipe-hint { display: block; }
       #sidebar {
         position: fixed;
-        bottom: 0;
+        top: 0;
         left: 0;
-        width: 100%;
-        max-height: 80vh;
-        border-radius: 16px 16px 0 0;
-        border-right: none;
+        width: 85%;
+        max-width: 320px;
+        height: 100vh;
         z-index: 100000;
-        transform: translateY(100%);
+        transform: translateX(-100%);
       }
-      #sidebar.open { transform: translateY(0) !important; }
+      #sidebar.open { transform: translateX(0) !important; }
       .close-btn { display: block; }
     }
   </style>
 </head>
 <body>
+
+  <div class="swipe-hint"></div>
 
   <div id="sidebar">
     <div class="header">
@@ -187,29 +187,42 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Create Official Leaflet Control for Floating Action Button
-    const MobileFabControl = L.Control.extend({
-      options: { position: 'bottomright' },
-      onAdd: function(map) {
-        const btn = L.DomUtil.create('button', 'mobile-fab-control');
-        btn.innerText = 'Add / View Cards';
+    // Touch Swipe Gesture Handling (Edge Swipe from Left)
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
 
-        L.DomEvent.disableClickPropagation(btn);
-        L.DomEvent.disableScrollPropagation(btn);
+    const EDGE_THRESHOLD = 35; // Maximum distance from screen edge to count as edge swipe
+    const SWIPE_THRESHOLD = 40; // Minimum horizontal swipe distance to trigger
 
-        const openDrawer = function(e) {
-          if (e) L.DomEvent.stop(e);
+    document.addEventListener('touchstart', function(e) {
+      touchStartX = e.changedTouches[0].clientX;
+      touchStartY = e.changedTouches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', function(e) {
+      touchEndX = e.changedTouches[0].clientX;
+      touchEndY = e.changedTouches[0].clientY;
+      handleSwipeGesture();
+    }, { passive: true });
+
+    function handleSwipeGesture() {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+
+      // Ensure horizontal swipe dominant over vertical scrolling
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // Swipe Right from Left Edge -> Open Sidebar
+        if (deltaX > SWIPE_THRESHOLD && touchStartX <= EDGE_THRESHOLD) {
           sidebar.classList.add('open');
-        };
-
-        L.DomEvent.on(btn, 'click', openDrawer);
-        L.DomEvent.on(btn, 'touchstart', openDrawer);
-
-        return btn;
+        } 
+        // Swipe Left -> Close Sidebar (if opened)
+        else if (deltaX < -SWIPE_THRESHOLD && sidebar.classList.contains('open')) {
+          sidebar.classList.remove('open');
+        }
       }
-    });
-
-    map.addControl(new MobileFabControl());
+    }
 
     closeDrawerBtn.onclick = function() {
       sidebar.classList.remove('open');
