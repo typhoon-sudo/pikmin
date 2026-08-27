@@ -1,19 +1,18 @@
 {
   "name": "Pikmin Postcard Vault",
-  "short_name": "Postcards",
-  "start_url": "/pikmin/",
-  "scope": "/pikmin/",
+  "short_name": "PostcardVault",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#f4f6f8",
   "theme_color": "#2e7d32",
   "icons": [
     {
-      "src": "/pikmin/pikminlogo.png",
+      "src": "pikminlogo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/pikmin/pikminlogo.png",
+      "src": "pikminlogo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
