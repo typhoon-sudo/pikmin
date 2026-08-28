@@ -112,7 +112,6 @@
     .popup-delete-btn { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
     .popup-delete-btn:hover { background: #ffcdd2; }
 
-    /* Custom Numbered Dot Marker */
     .custom-dot-marker {
       background-color: #2e7d32;
       border: 2px solid #ffffff;
@@ -168,12 +167,12 @@
         <form id="upload-form">
           <div class="form-group">
             <label for="card-title">Postcard Title</label>
-            <input type="text" id="card-title" placeholder="e.g., D2 Place One" required />
+            <input type="text" id="card-title" placeholder="e.g., Pikmin Monument" required />
           </div>
           
           <div class="form-group">
             <label for="area-input">District / Area</label>
-            <input type="text" id="area-input" placeholder="e.g., Cheung Yee Street" required />
+            <input type="text" id="area-input" placeholder="e.g., Kita Ward, Osaka" required />
           </div>
 
           <div class="form-group">
@@ -198,12 +197,13 @@
 
   <div id="map"></div>
 
-  <!-- Leaflet JS & MarkerCluster JS -->
+  <!-- Leaflet, MarkerCluster & LocalForage (IndexedDB Wrapper) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/Leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
   
   <script>
-    // Free & Vibrant Tile Layer (OpenStreetMap HOT - No API Key Required)
+    // Free OpenStreetMap HOT Tile Layer
     const map = L.map('map', { zoomControl: false }).setView([23.9756, 120.9738], 7);
     L.control.zoom({ position: 'topright' }).addTo(map);
     
@@ -212,7 +212,7 @@
       maxZoom: 19
     }).addTo(map);
 
-    // Dynamic Cluster Icon (sums postcards across clustered locations)
+    // Marker Clustering Group
     const markerClusterGroup = L.markerClusterGroup({
       showCoverageOnHover: false,
       maxClusterRadius: 45,
@@ -237,17 +237,49 @@
     });
     map.addLayer(markerClusterGroup);
 
-    // Load data from persistent browser storage
-    const districtRegistry = JSON.parse(localStorage.getItem('pikmin_vault_data')) || {};
+    let districtRegistry = {};
     const mapMarkers = {};
     let currentBase64Image = "";
 
-    function saveVaultData() {
+    // Save to IndexedDB using localForage
+    async function saveVaultData() {
       try {
-        localStorage.setItem('pikmin_vault_data', JSON.stringify(districtRegistry));
+        await localforage.setItem('pikmin_vault_data', districtRegistry);
       } catch (e) {
-        console.error("Storage full or unavailable:", e);
+        console.error("IndexedDB error:", e);
       }
+    }
+
+    // Image Compressor Function (Resizes to max 800px width, JPEG ~75% quality)
+    function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxWidth = 800;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            resolve(canvas.toDataURL('image/jpeg', 0.75));
+          };
+          img.onerror = reject;
+        };
+        reader.onerror = reject;
+      });
     }
 
     // DOM References
@@ -262,22 +294,26 @@
     const searchInput = document.getElementById('search-input');
     const cardsContainer = document.getElementById('cards-container');
 
-    // Drawer Controls
     mobileFab.addEventListener('click', () => sidebar.classList.add('open'));
     closeDrawerBtn.addEventListener('click', () => sidebar.classList.remove('open'));
-
     searchInput.addEventListener('input', renderSidebarList);
 
-    imageInput.addEventListener('change', function(e) {
+    // Compress image as soon as user picks a file
+    imageInput.addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          currentBase64Image = event.target.result;
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Processing image...";
+        try {
+          currentBase64Image = await compressImage(file);
           previewImg.src = currentBase64Image;
           previewContainer.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+          alert("Error processing image file.");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "Add to Map";
+        }
       }
     });
 
@@ -318,7 +354,7 @@
         districtRegistry[areaKey].cards.push({ id: cardId, title, image: currentBase64Image });
 
         updateMapMarker(areaKey);
-        saveVaultData();
+        await saveVaultData();
         renderSidebarList();
 
         uploadForm.reset();
@@ -382,7 +418,7 @@
       }
     }
 
-    window.deletePostcard = function(cardId, areaKey) {
+    window.deletePostcard = async function(cardId, areaKey) {
       const group = districtRegistry[areaKey];
       if (!group) return;
 
@@ -398,7 +434,7 @@
         updateMapMarker(areaKey);
       }
 
-      saveVaultData();
+      await saveVaultData();
       renderSidebarList();
     };
 
@@ -448,13 +484,21 @@
       });
     }
 
-    // Initialize saved data onto map and sidebar
-    Object.keys(districtRegistry).forEach(areaKey => {
-      updateMapMarker(areaKey);
-    });
-    renderSidebarList();
+    // Initialize application data from IndexedDB
+    async function initVault() {
+      const savedData = await localforage.getItem('pikmin_vault_data');
+      if (savedData) {
+        districtRegistry = savedData;
+        Object.keys(districtRegistry).forEach(areaKey => {
+          updateMapMarker(areaKey);
+        });
+        renderSidebarList();
+      }
+    }
 
-    // Service Worker Registration for PWA support
+    initVault();
+
+    // Register Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
